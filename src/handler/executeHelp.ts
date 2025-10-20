@@ -23,6 +23,10 @@ export const executeHelp = async (interaction: any) => {
         value: "Show the queue.",
       },
       {
+        name: "`/shuffle`",
+        value: "Shuffle the queue.",
+      },
+      {
         name: "`/help`",
         value: "Show this message.",
       }

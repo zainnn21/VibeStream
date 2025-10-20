@@ -1,4 +1,4 @@
-// Helper function untuk algoritma Fisher-Yates
+// Helper function untuk algoritma Fisher-Yates (Durstenfeld Shuffle)
 export const shuffleArray = (array: any[]) => {
   // Looping dari elemen terakhir ke elemen kedua
   for (let i = array.length - 1; i > 0; i--) {
