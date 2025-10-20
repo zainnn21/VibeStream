@@ -7,8 +7,13 @@ import {
   VoiceConnectionStatus,
   AudioPlayer,
   AudioPlayerStatus,
+  StreamType,
 } from "@discordjs/voice";
-import play, { YouTubeVideo } from "play-dl";
+import youtubedlExec from "youtube-dl-exec";
+const youtubedl = youtubedlExec.create(
+  process.env.YOUTUBE_DL_PATH || "./youtube-dl"
+);
+import yts from "yt-search";
 
 interface Song {
   title: string;
@@ -66,31 +71,37 @@ const executePlay = async (interaction: any, query: string) => {
 
   await interaction.reply(`Find....🔎 ${query}`);
 
-  let songInfo: YouTubeVideo;
+  let songUrl: string;
+  let songTitle: string;
   try {
-    const searchResults = await play.search(query, {
-      limit: 1,
-      source: {
-        youtube: "video",
-      },
-    });
-    if (searchResults.length === 0) {
-      return interaction.followUp("No results found");
+    const isUrl = query.startsWith("https://") || query.startsWith("https://");
+    if (isUrl) {
+      const info = await youtubedl(query, {
+        dumpSingleJson: true,
+        noCheckCertificates: true,
+        preferFreeFormats: true,
+        noWarnings: true,
+      });
+      songUrl = query;
+      songTitle = (info as { title: string }).title || "Unknown Title";
+    } else {
+      const searchResults = await yts(query);
+      const videos = searchResults.videos;
+      if (videos.length === 0) {
+        return interaction.followUp("No results found");
+      }
+      songUrl = videos[0]?.url ?? "";
+      songTitle = videos[0]?.title ?? "";
     }
-    songInfo = searchResults[0] as YouTubeVideo;
   } catch (error) {
     console.error(error);
     return interaction.followUp("Something went wrong");
   }
 
-  if (!songInfo.url) {
-    return interaction.followUp("Video not found Url not valid");
+  if (!songUrl) {
+    return interaction.followUp("Video not found, URL not valid");
   }
-  
-  const song: Song = {
-    title: songInfo.title || "Title not found",
-    url: songInfo.url,
-  };
+  const song: Song = { title: songTitle, url: songUrl };
 
   let serverQueue = queue.get(interaction.guild.id);
   if (!serverQueue) {
@@ -149,46 +160,57 @@ const playSong = async (guildId: string, song: Song) => {
     }
     return;
   }
-  let stream;
+
   try {
-    stream = await play.stream(song.url);
+    const info = (await youtubedl(song.url, {
+      dumpSingleJson: true,
+      noCheckCertificates: true,
+      preferFreeFormats: true,
+      noWarnings: true,
+      format: "bestaudio",
+    })) as any;
+
+    const audioUrl = info.url || info.formats?.[0]?.url;
+    if (typeof audioUrl !== "string" || !audioUrl) {
+      throw new Error("Audio URL not found");
+    }
+    const resource = createAudioResource(audioUrl, {
+      inputType: StreamType.Arbitrary,
+    });
+    serverQueue.player.play(resource);
+    serverQueue.playing = true;
+    serverQueue.player.once(AudioPlayerStatus.Idle, () => {
+      serverQueue.playing = false;
+      serverQueue.songs.shift();
+      if (serverQueue.songs.length > 0) {
+        const song = serverQueue.songs[0];
+        if (song) {
+          playSong(guildId, song);
+        }
+      }
+    });
+    serverQueue.player.on("error", (error) => {
+      console.error("Audio player error:", error);
+      serverQueue.songs.shift();
+      if (serverQueue.songs.length > 0) {
+        const song = serverQueue.songs[0];
+        if (song) {
+          playSong(guildId, song);
+        }
+      }
+      serverQueue.playing = false;
+    });
   } catch (error) {
-    console.error("Error streaming:", error);
+    console.error("Error playing song:", error);
     serverQueue.songs.shift();
     if (serverQueue.songs.length > 0) {
-      const song = serverQueue.songs[0];
-      if (song) {
-        playSong(guildId, song);
+      const nextSong = serverQueue.songs[0];
+      if (nextSong) {
+        playSong(guildId, nextSong);
       }
     }
     return;
   }
-  const resource = createAudioResource(stream.stream, {
-    inputType: stream.type,
-  });
-  serverQueue.player.play(resource);
-  serverQueue.playing = true;
-  serverQueue.player.once(AudioPlayerStatus.Idle, () => {
-    serverQueue.playing = false;
-    serverQueue.songs.shift();
-    if (serverQueue.songs.length > 0) {
-      const song = serverQueue.songs[0];
-      if (song) {
-        playSong(guildId, song);
-      }
-    }
-  });
-  serverQueue.player.on("error", (error) => {
-    console.error("Audio player error:", error);
-    serverQueue.songs.shift();
-    if (serverQueue.songs.length > 0) {
-      const song = serverQueue.songs[0];
-      if (song) {
-        playSong(guildId, song);
-      }
-    }
-    serverQueue.playing = false;
-  });
 };
 
 client.login(token);
