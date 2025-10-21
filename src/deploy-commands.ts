@@ -57,6 +57,16 @@ const commands = [
   new SlashCommandBuilder().setName("help").setDescription("show help"),
 
   new SlashCommandBuilder()
+    .setName("playlist")
+    .setDescription("play a playlist from a link")
+    .addStringOption((option) =>
+      option
+        .setName("query")
+        .setDescription("playlist link")
+        .setRequired(true)
+    ),
+
+  new SlashCommandBuilder()
     .setName("priority")
     .setDescription("change priority of queue"),
 ].map((command) => command.toJSON());

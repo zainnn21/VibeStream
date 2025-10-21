@@ -1,0 +1,9 @@
+services:
+  bot:
+    build: .
+    image: vibestream-bot
+    restart: always
+    env_file:
+      - .env
+    
+    container_name: vibestream-bot

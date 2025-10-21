@@ -11,14 +11,15 @@
  * - yt-search: Library untuk search video YouTube
  */
 
-import { Client, GatewayIntentBits} from "discord.js";
-import type { Interaction} from "discord.js";
+import { Client, GatewayIntentBits } from "discord.js";
+import type { Interaction } from "discord.js";
 import { executePlay } from "./handler/executePlay";
 import { executeStop } from "./handler/executeStop";
 import { executeSkip } from "./handler/executeSkip";
 import { executeShowQueue } from "./handler/executeShowQueue";
 import { executeShuffle } from "./handler/executeShuffle";
 import { executeHelp } from "./handler/executeHelp";
+import { executePlaylist } from "./handler/executePlaylist";
 import type { Queue } from "./interfaces/queue";
 import youtubedlExec from "youtube-dl-exec";
 const youtubedl = youtubedlExec.create(
@@ -100,6 +101,10 @@ client.on("interactionCreate", async (interaction: Interaction) => {
     await executeShuffle(interaction, queue);
   } else if (commandName === "help") {
     await executeHelp(interaction);
+  } else if (commandName === "playlist") {
+    const query = interaction.options.getString("query", true);
+    console.log(`🎵 Query: ${query}`);
+    await executePlaylist(interaction, queue, youtubedl, query);
   } else {
     console.log("⚠️ Unknown command");
     return interaction.reply("Unknown command");
