@@ -19,12 +19,24 @@ import { executeSkip } from "./handler/executeSkip";
 import { executeShowQueue } from "./handler/executeShowQueue";
 import { executeShuffle } from "./handler/executeShuffle";
 import { executeHelp } from "./handler/executeHelp";
-import { executePlaylist } from "./handler/executePlaylist";
+import { executePlayList } from "./handler/executePlayList";
 import type { Queue } from "./interfaces/queue";
 import youtubedlExec from "youtube-dl-exec";
-const youtubedl = youtubedlExec.create(
-  process.env.YOUTUBE_DL_PATH || "../yt-dlp"
-);
+import { execSync } from "child_process";
+const isRunningInDocker = () => {
+  try {
+    execSync("cat /.dockerenv", { stdio: "ignore" });
+    return true;
+  } catch {
+    return false;
+  }
+};
+const ytdlpPath = isRunningInDocker()
+  ? process.env.YOUTUBE_DL_PATH_DOCKER || "yt-dlp"
+  : process.env.YOUTUBE_DL_PATH || "yt-dlp";
+const youtubedl = youtubedlExec.create(ytdlpPath);
+
+console.log(`🧠 yt-dlp path digunakan: ${ytdlpPath}`);
 
 // ============================================================================
 // INITIALIZATION
@@ -104,10 +116,7 @@ client.on("interactionCreate", async (interaction: Interaction) => {
   } else if (commandName === "playlist") {
     const query = interaction.options.getString("query", true);
     console.log(`🎵 Query: ${query}`);
-    await executePlaylist(interaction, queue, youtubedl, query);
-  } else {
-    console.log("⚠️ Unknown command");
-    return interaction.reply("Unknown command");
+    await executePlayList(interaction, queue, youtubedl, query);
   }
 });
 

@@ -17,7 +17,7 @@ import { playSong } from "../utils/playSong";
  * 3. Add ke queue dengan lazy loading
  * 4. Skip otomatis video yang unavailable/restricted
  */
-export const executePlaylist = async (
+export const executePlayList = async (
   interaction: any,
   queue: any,
   youtubedl: any,
@@ -61,11 +61,13 @@ export const executePlaylist = async (
       )
     );
 
+    // flag flatPlaylist true ini akan lebih cepat karena yang diambil hanya id,url,judul
+
     const fetchPlaylist = youtubedl(query, {
       dumpSingleJson: true,
       noCheckCertificates: true,
       noWarnings: true,
-      flatPlaylist: true, // Get all videos in flat list
+      flatPlaylist: true,
       skipDownload: true,
       geoBypass: true, // Bypass geo-restrictions
       yesPlaylist: true, // Force playlist extraction

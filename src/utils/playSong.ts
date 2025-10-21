@@ -4,6 +4,7 @@ import {
   StreamType,
 } from "@discordjs/voice";
 import type { Song } from "../interfaces/song";
+import { execSync, spawn } from "child_process";
 // Inisialisasi yt-dlp dengan path custom atau default
 
 /**
@@ -102,31 +103,70 @@ export const playSong = async (
      */
     const info = (await youtubedl(song.url, {
       dumpSingleJson: true,
+      format: "bestaudio[ext=webm]/bestaudio",
       noCheckCertificates: true,
       preferFreeFormats: true,
-      noWarnings: true,
-      format: "bestaudio", // Pilih format audio terbaik
+      addHeader: [
+        "User-Agent: Mozilla/5.0",
+        "Referer: https://www.youtube.com/",
+      ],
     })) as any;
+
+    console.log("🔗 Audio URL:", info.url);
 
     // Extract audio URL dari response yt-dlp
     // Bisa ada di info.url atau info.formats[0].url
     const audioUrl = info.url || info.formats?.[0]?.url;
+
+    console.log("🎶 Streaming:", audioUrl);
 
     // Validasi: Pastikan audio URL valid
     if (typeof audioUrl !== "string" || !audioUrl) {
       throw new Error("Audio URL not found");
     }
 
+    let ffmpegAvailable = false;
+    try {
+      execSync("ffmpeg -version", { stdio: "ignore" });
+      ffmpegAvailable = true;
+    } catch (error) {
+      ffmpegAvailable = false;
+    }
     console.log("✅ Audio URL obtained");
 
-    /**
-     * Create audio resource dari URL
-     * StreamType.Arbitrary: Format stream tidak diketahui,
-     * biarkan @discordjs/voice auto-detect
-     */
-    const resource = createAudioResource(audioUrl, {
-      inputType: StreamType.Arbitrary,
-    });
+    let resource;
+
+    if (ffmpegAvailable) {
+      const ffmpeg = spawn("ffmpeg", [
+        "-i",
+        audioUrl, // input dari YouTube
+        "-f",
+        "s16le", // format PCM mentah
+        "-ar",
+        "48000", // sample rate 48kHz (standar Discord)
+        "-ac",
+        "2", // stereo
+        "pipe:1", // stream hasil FFmpeg ke stdout
+      ]);
+
+      ffmpeg.stderr.on("data", (data) => {
+        console.log("🐧 FFmpeg log:", data.toString());
+      });
+
+      resource = createAudioResource(ffmpeg.stdout, {
+        inputType: StreamType.Raw,
+      });
+    } else {
+      console.log("FFmpeg not found — using direct stream mode");
+      /**
+       * Create audio resource dari URL
+       * StreamType.Arbitrary: Format stream tidak diketahui,
+       * biarkan @discordjs/voice auto-detect
+       */
+      resource = createAudioResource(audioUrl, {
+        inputType: StreamType.Arbitrary,
+      });
+    }
 
     // Play audio resource
     player.play(resource);

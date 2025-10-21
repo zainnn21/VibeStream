@@ -2,10 +2,10 @@ import { REST, Routes, SlashCommandBuilder } from "discord.js";
 
 const token = process.env.DISCORD_TOKEN;
 const clientId = process.env.DISCORD_CLIENT_ID;
-const guildId = process.env.DISCORD_GUILD_ID;
-console.log(token, clientId, guildId);
+// const guildId = process.env.DISCORD_GUILD_ID;  // uncomment kalo mau deploy di server spesifik
+console.log(token, clientId);
 
-if (!token || !clientId || !guildId) {
+if (!token || !clientId) {
   throw new Error("🛑 Missing environment variables");
 }
 
@@ -77,7 +77,7 @@ const rest = new REST({ version: "10" }).setToken(token);
   try {
     console.log(`started registering ${commands.length} (/) commands`);
     const data: any = await rest.put(
-      Routes.applicationGuildCommands(clientId, guildId),
+      Routes.applicationCommands(clientId),
       { body: commands }
     );
     console.log(`successfully registered ${data.length} (/) commands`);

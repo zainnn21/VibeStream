@@ -3,7 +3,8 @@
   "module": "src/index.ts",
   "type": "module",
   "scripts": {
-    "dev": "bun --watch src/index"
+    "dev": "bun --watch src/index",
+    "start-docker": "ts-node src/index.ts"
   },
   "private": true,
   "devDependencies": {

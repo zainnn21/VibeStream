@@ -27,6 +27,10 @@ export const executeHelp = async (interaction: any) => {
         value: "Shuffle the queue.",
       },
       {
+        name: "`/playlist [query]`",
+        value: "Play a playlist from a link.",
+      },
+      {
         name: "`/help`",
         value: "Show this message.",
       }
