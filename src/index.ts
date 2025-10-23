@@ -107,7 +107,7 @@ client.on("interactionCreate", async (interaction: Interaction) => {
   } else if (commandName === "stop") {
     await executeStop(interaction, queue);
   } else if (commandName === "skip") {
-    await executeSkip(interaction, queue);
+    await executeSkip(interaction, queue, youtubedl);
   } else if (commandName === "queue") {
     await executeShowQueue(interaction, queue);
   } else if (commandName === "shuffle") {

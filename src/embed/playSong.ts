@@ -1,5 +1,5 @@
 // import { EmbedBuilder } from "discord.js";
-// import type { Song } from "../interfaces/song";
+// import type { Song } from "../interfaces/song.ts";
 
 // export const embedPlaySong = (song: Song) => {
 //   const embed = new EmbedBuilder()

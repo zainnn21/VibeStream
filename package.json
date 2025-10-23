@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "bun --watch src/index",
     "start-docker": "ts-node src/index.ts",
-    "devnode": "ts-node src/index.ts"
+    "devnode": "ts-node src/index.ts",
+    "build": "tsc"
   },
   "private": true,
   "devDependencies": {

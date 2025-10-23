@@ -2,6 +2,7 @@ import {
   createAudioResource,
   AudioPlayerStatus,
   StreamType,
+  Node,
 } from "@discordjs/voice";
 import type { Song } from "../interfaces/song.ts";
 import { execSync, spawn } from "child_process";
@@ -18,50 +19,42 @@ export const playSong = async (
 ) => {
   console.log(`🎵 Now playing: ${song.title}`);
   const serverQueue = queue.get(guildId);
-  if (!serverQueue || !song) {
-    console.log("❌ No queue or song found");
-    serverQueue?.connection?.destroy();
-    queue.delete(guildId);
+
+  if (!serverQueue) {
+    console.log("❌ No server queue found");
     return;
+  }
+
+  if (!song) {
+    await new Promise((r) => setTimeout(r, 200));
+    if (!serverQueue.songs[0]) {
+      console.log("❌ No song found after delay");
+      serverQueue.connection.destroy();
+      queue.delete(guildId);
+      return;
+    }
+    song = serverQueue.songs[0];
   }
 
   const { player } = serverQueue;
   player.removeAllListeners();
 
-  // 🔁 Event: saat lagu selesai
-  player.once(AudioPlayerStatus.Idle, async () => {
-    console.log("⏭️ Song finished, moving to next...");
-    serverQueue.playing = false;
-    serverQueue.songs.shift();
+  // Stop player lama (jaga-jaga biar gak tumpang tindih)
+  try {
+    player.stop(true);
+  } catch {}
 
-    if (serverQueue.songs.length > 0) {
-      const nextSong = serverQueue.songs[0];
-      await new Promise((r) => setTimeout(r, 300));
-      playSong(guildId, nextSong, queue, youtubedl);
-    } else {
-      console.log("📭 Queue empty, leaving channel");
-      serverQueue.connection.destroy();
-      queue.delete(guildId);
-    }
-  });
-
-  // ⚠️ Event: error audio
-  player.once("error", (err: Error) => {
-    console.error("❌ Player error:", err);
-    serverQueue.songs.shift();
-    if (serverQueue.songs.length > 0) {
-      playSong(guildId, serverQueue.songs[0], queue, youtubedl);
-    } else {
-      serverQueue.connection.destroy();
-      queue.delete(guildId);
-    }
-  });
+  // ✅ Cek FFmpeg
+  try {
+    execSync(`${ffmpegPath} -version`, { stdio: "ignore" });
+  } catch {
+    console.error("❌ FFmpeg not found!");
+    serverQueue.textChannel?.send?.("⚠️ FFmpeg not found!");
+    return;
+  }
 
   try {
-    // Stop player sebelumnya
-    player.stop(true);
-
-    // ✅ Pastikan FFmpeg ada
+    //  Pastikan FFmpeg ada
     try {
       execSync(`${ffmpegPath} -version`, { stdio: "ignore" });
       console.log("✅ FFmpeg detected at:", ffmpegPath);
@@ -71,7 +64,7 @@ export const playSong = async (
       return;
     }
 
-    // 🎧 Jalankan yt-dlp dan stream ke stdout
+    // Jalankan yt-dlp dan stream ke stdout
     const ytdlp = spawn("yt-dlp", [
       "-f",
       "bestaudio[ext=webm]/bestaudio/best",
@@ -90,15 +83,16 @@ export const playSong = async (
       song.url,
     ]);
 
-    // 🚰 Proses stream yt-dlp → ffmpeg
+    //  Proses stream yt-dlp → ffmpeg
     const ffmpeg = spawn(
       ffmpegPath!,
       [
         "-hide_banner",
         "-loglevel",
-        "error",
+        "warning",
         "-i",
         "pipe:0",
+        "-vn",
         "-f",
         "s16le",
         "-ar",
@@ -110,29 +104,74 @@ export const playSong = async (
       { stdio: ["pipe", "pipe", "inherit"] }
     );
 
-    ytdlp.stdout.pipe(ffmpeg.stdin);
+    serverQueue.currentYtdlp = ytdlp;
+    serverQueue.currentFFmpeg = ffmpeg;
 
-    // 🧠 Logging & error handling
-    ytdlp.stderr.on("data", (d) =>
-      console.error("❗ yt-dlp error:", d.toString())
-    );
-    ytdlp.on("close", (code) => {
-      if (code !== 0) console.warn(`⚠️ yt-dlp exited with code ${code}`);
+    // Tangani error EPIPE dan stream
+    ytdlp.stdout.pipe(ffmpeg.stdin).on("error", (err) => {
+      if ((err as NodeJS.ErrnoException).code !== "EPIPE") {
+        console.error("❌ Stream pipe error:", err);
+      }
     });
 
-    ffmpeg.on("close", (code) => {
-      if (code !== 0) console.warn(`⚠️ FFmpeg exited with code ${code}`);
+    ffmpeg.stdin.on("error", (err) => {
+      if ((err as NodeJS.ErrnoException).code !== "EPIPE") {
+        console.error("⚠️ FFmpeg stdin error:", err);
+      }
     });
 
-    // 🎵 Buat resource dari output ffmpeg
+    //  Buat resource audio
     const resource = createAudioResource(ffmpeg.stdout, {
       inputType: StreamType.Raw,
     });
-
-    // ▶️ Play
+    // ▶ Mulai mainkan
     player.play(resource);
     serverQueue.playing = true;
-    console.log(`▶️ Playing song: ${song.title}`);
+    console.log(`▶️ Playing: ${song.title}`);
+
+    // 🔁 Saat lagu selesai
+    player.once(AudioPlayerStatus.Idle, async () => {
+      if (serverQueue.destroyed) return; // ✅ sudah dihapus, abaikan
+      if (serverQueue.playing) return; // ✅ lagi transisi, abaikan
+
+      console.log("⏭️ Song finished, moving to next...");
+      serverQueue.playing = false;
+
+      try {
+        ytdlp.kill("SIGKILL");
+        ffmpeg.kill("SIGKILL");
+      } catch {}
+
+      serverQueue.songs.shift();
+
+      if (serverQueue.songs.length > 0) {
+        const nextSong = serverQueue.songs[0];
+        await new Promise((r) => setTimeout(r, 300));
+        serverQueue.playing = true;
+        await playSong(guildId, nextSong, queue, youtubedl);
+      } else {
+        console.log("📭 Queue empty, leaving channel");
+        serverQueue.destroyed = true; // ✅ tandai supaya event lain tidak jalan
+        serverQueue.connection.destroy();
+        queue.delete(guildId);
+      }
+    });
+
+    //  Error player
+    player.once("error", (err: any) => {
+      console.error("❌ Player error:", err);
+      try {
+        ytdlp.kill("SIGKILL");
+        ffmpeg.kill("SIGKILL");
+      } catch {}
+      serverQueue.songs.shift();
+      if (serverQueue.songs.length > 0) {
+        playSong(guildId, serverQueue.songs[0], queue, youtubedl);
+      } else {
+        serverQueue.connection.destroy();
+        queue.delete(guildId);
+      }
+    });
   } catch (error) {
     console.error("❌ Error playing song:", error);
     serverQueue.songs.shift();
