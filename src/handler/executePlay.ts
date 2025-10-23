@@ -1,12 +1,9 @@
-import type  {GuildMember} from 'discord.js';
-import {
-  joinVoiceChannel,
-  createAudioPlayer,
-} from "@discordjs/voice";
-import type {Song} from "../interfaces/song";
-import yts from "yt-search";
-import type {Queue} from "../interfaces/queue";
-import { playSong } from '../utils/playSong';
+import type { GuildMember } from "discord.js";
+import { joinVoiceChannel, createAudioPlayer } from "@discordjs/voice";
+import type { Song } from "../interfaces/song.ts";
+import yts, { type Author, type Duration } from "yt-search";
+import type { Queue } from "../interfaces/queue.ts";
+import { playSong } from "../utils/playSong.ts";
 /**
  * Handler untuk command /play
  * Memutar musik dari YouTube URL atau search query
@@ -45,6 +42,15 @@ export const executePlay = async (interaction: any, query: string, queue:any, yo
     const isUrl = query.startsWith("https://") || query.startsWith("http://");
     let songUrl = "";
     let songTitle = "";
+    let songThumbnail = "";
+    let songDuration: Duration | null = null;
+    let songViews = 0;
+    let songDescription = "";
+    let songImage = "";
+    let songAgo = "";
+    let songSeconds = 0;
+    let songTimestamp = "";
+    let songAuthor: Author = { name: "", url: "" };
 
     if (isUrl) {
       // ========== PROCESSING URL ==========

@@ -1,4 +1,4 @@
-import { shuffleArray } from "../utils/shuffleArray";
+import { shuffleArray } from "../utils/shuffleArray.ts";
 
 export const executeShuffle = async (interaction: any, queue: any) => {
   const serverQueue = queue.get(interaction.guild.id);

@@ -5,7 +5,7 @@ import {
   ButtonStyle,
   ComponentType,
 } from "discord.js";
-import type { Song } from "../interfaces/song";
+import type { Song } from "../interfaces/song.ts";
 
 export const executeShowQueue = async (interaction: any, queue: any) => {
   const serverQueue = queue.get(interaction.guild.id);

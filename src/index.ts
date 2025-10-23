@@ -13,16 +13,17 @@
 
 import { Client, GatewayIntentBits } from "discord.js";
 import type { Interaction } from "discord.js";
-import { executePlay } from "./handler/executePlay";
-import { executeStop } from "./handler/executeStop";
-import { executeSkip } from "./handler/executeSkip";
-import { executeShowQueue } from "./handler/executeShowQueue";
-import { executeShuffle } from "./handler/executeShuffle";
-import { executeHelp } from "./handler/executeHelp";
-import { executePlayList } from "./handler/executePlayList";
-import type { Queue } from "./interfaces/queue";
+import { executePlay } from "./handler/executePlay.ts";
+import { executeStop } from "./handler/executeStop.ts";
+import { executeSkip } from "./handler/executeSkip.ts";
+import { executeShowQueue } from "./handler/executeShowQueue.ts";
+import { executeShuffle } from "./handler/executeShuffle.ts";
+import { executeHelp } from "./handler/executeHelp.ts";
+import { executePlayList } from "./handler/executePlayList.ts";
+import type { Queue } from "./interfaces/queue.ts";
 import youtubedlExec from "youtube-dl-exec";
 import { execSync } from "child_process";
+import "dotenv/config";
 const isRunningInDocker = () => {
   try {
     execSync("cat /.dockerenv", { stdio: "ignore" });

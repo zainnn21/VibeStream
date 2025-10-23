@@ -1,3 +1,5 @@
+import type { Duration, Author } from "yt-search";
+
 /**
  * Interface untuk data lagu yang akan diputar
  */

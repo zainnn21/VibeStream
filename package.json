@@ -4,20 +4,25 @@
   "type": "module",
   "scripts": {
     "dev": "bun --watch src/index",
-    "start-docker": "ts-node src/index.ts"
+    "start-docker": "ts-node src/index.ts",
+    "devnode": "ts-node src/index.ts"
   },
   "private": true,
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
   },
   "peerDependencies": {
     "typescript": "^5"
   },
   "dependencies": {
+    "@discordjs/opus": "^0.10.0",
     "@discordjs/voice": "^0.19.0",
     "@snazzah/davey": "^0.1.7",
     "@types/yt-search": "^2.10.3",
     "discord.js": "^14.23.2",
+    "dotenv": "^17.2.3",
     "ffmpeg-static": "^5.2.0",
     "libsodium-wrappers": "^0.7.15",
     "youtube-dl-exec": "^3.0.26",

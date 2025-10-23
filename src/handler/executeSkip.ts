@@ -1,4 +1,3 @@
-import { playSong } from "../utils/playSong";
 
 export const executeSkip = async (interaction: any, queue: any) => {
   const serverQueue = queue.get(interaction.guild.id);

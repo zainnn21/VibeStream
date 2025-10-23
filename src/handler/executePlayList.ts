@@ -1,8 +1,8 @@
 import type { GuildMember } from "discord.js";
 import { joinVoiceChannel, createAudioPlayer } from "@discordjs/voice";
-import type { Song } from "../interfaces/song";
-import type { Queue } from "../interfaces/queue";
-import { playSong } from "../utils/playSong";
+import type { Song } from "../interfaces/song.ts";
+import type { Queue } from "../interfaces/queue.ts";
+import { playSong } from "../utils/playSong.ts";
 
 /**
  * Handler untuk command /playlist
