@@ -17,7 +17,6 @@ export const playSong = async (
   queue: any,
   youtubedl: any
 ) => {
-  console.log(`🎵 Now playing: ${song.title}`);
   const serverQueue = queue.get(guildId);
 
   if (!serverQueue) {
@@ -63,6 +62,8 @@ export const playSong = async (
       serverQueue.textChannel?.send?.("⚠️ FFmpeg not found!");
       return;
     }
+
+    console.log(`🎵 Now playing: ${song.title}`);
 
     // Jalankan yt-dlp dan stream ke stdout
     const ytdlp = spawn("yt-dlp", [
@@ -124,34 +125,48 @@ export const playSong = async (
     const resource = createAudioResource(ffmpeg.stdout, {
       inputType: StreamType.Raw,
     });
-    // ▶ Mulai mainkan
+
     player.play(resource);
     serverQueue.playing = true;
-    console.log(`▶️ Playing: ${song.title}`);
+
+    player.on(AudioPlayerStatus.Playing, () => {
+      console.log(`🎧 Now streaming: ${song.title}`);
+    });
 
     // 🔁 Saat lagu selesai
     player.once(AudioPlayerStatus.Idle, async () => {
-      if (serverQueue.destroyed) return; // ✅ sudah dihapus, abaikan
-      if (serverQueue.playing) return; // ✅ lagi transisi, abaikan
+      if (serverQueue.destroyed) {
+        console.log("⏹️ Queue already destroyed, ignoring Idle event");
+        return;
+      }
 
       console.log("⏭️ Song finished, moving to next...");
+      
+      // ✅ Set playing = false SEBELUM proses apapun
       serverQueue.playing = false;
 
+      // Cleanup proses lama
       try {
         ytdlp.kill("SIGKILL");
         ffmpeg.kill("SIGKILL");
       } catch {}
 
+      // Hapus lagu yang sudah selesai
       serverQueue.songs.shift();
 
       if (serverQueue.songs.length > 0) {
         const nextSong = serverQueue.songs[0];
+        console.log(`▶️ Playing next song: ${nextSong.title}`);
+        
+        // Delay kecil untuk stabilitas
         await new Promise((r) => setTimeout(r, 300));
+        
+        // ✅ PENTING: Set playing = true sebelum playSong
         serverQueue.playing = true;
         await playSong(guildId, nextSong, queue, youtubedl);
       } else {
         console.log("📭 Queue empty, leaving channel");
-        serverQueue.destroyed = true; // ✅ tandai supaya event lain tidak jalan
+        serverQueue.destroyed = true;
         serverQueue.connection.destroy();
         queue.delete(guildId);
       }

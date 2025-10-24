@@ -4,6 +4,7 @@ import type { Song } from "../interfaces/song.ts";
 import yts, { type Author, type Duration } from "yt-search";
 import type { Queue } from "../interfaces/queue.ts";
 import { playSong } from "../utils/playSong.ts";
+import { embedPlaySong } from "../embed/playSong.ts";
 /**
  * Handler untuk command /play
  * Memutar musik dari YouTube URL atau search query
@@ -17,7 +18,12 @@ import { playSong } from "../utils/playSong.ts";
  * 3. Join voice channel jika belum ada queue
  * 4. Tambahkan lagu ke queue dan mulai playback
  */
-export const executePlay = async (interaction: any, query: string, queue:any, youtubedl:any) => {
+export const executePlay = async (
+  interaction: any,
+  query: string,
+  queue: any,
+  youtubedl: any
+) => {
   const member = interaction.member as GuildMember;
   const voiceChannel = member?.voice.channel;
 
@@ -42,15 +48,14 @@ export const executePlay = async (interaction: any, query: string, queue:any, yo
     const isUrl = query.startsWith("https://") || query.startsWith("http://");
     let songUrl = "";
     let songTitle = "";
-    let songThumbnail = "";
-    let songDuration: Duration | null = null;
-    let songViews = 0;
-    let songDescription = "";
-    let songImage = "";
-    let songAgo = "";
-    let songSeconds = 0;
-    let songTimestamp = "";
-    let songAuthor: Author = { name: "", url: "" };
+    let thumbnail = "";
+    let image = "";
+    let duration: Duration;
+    let views = 0;
+    let author: Author;
+    let timestamp = "";
+    let description = "";
+    let ago = "";
 
     if (isUrl) {
       // ========== PROCESSING URL ==========
@@ -89,6 +94,20 @@ export const executePlay = async (interaction: any, query: string, queue:any, yo
 
       songUrl = cleanUrl;
       songTitle = (info as { title: string }).title || "Unknown Title";
+      thumbnail = (info as { thumbnail: string }).thumbnail || "";
+      image = (info as { image: string }).image || "";
+      duration = (info as { duration: Duration }).duration || {
+        seconds: 0,
+        timestamp: "",
+      };
+      views = (info as { viewCount: number }).viewCount || 0;
+      author = (info as { author: Author }).author || {
+        name: "Unknown Author",
+        url: "",
+      };
+      timestamp = (info as { timestamp: string }).timestamp || "";
+      description = (info as { description: string }).description || "";
+      ago = (info as { ago: string }).ago || "";
       console.log(`✅ Got title: ${songTitle}`);
     } else {
       // ========== SEARCHING BY KEYWORD ==========
@@ -105,11 +124,30 @@ export const executePlay = async (interaction: any, query: string, queue:any, yo
       // Ambil video pertama dari hasil search
       songUrl = videos[0]?.url ?? "";
       songTitle = videos[0]?.title ?? "";
+      thumbnail = videos[0]?.thumbnail ?? "";
+      image = videos[0]?.image ?? "";
+      duration = videos[0]?.duration ?? { seconds: 0, timestamp: "" };
+      views = videos[0]?.views ?? 0;
+      author = videos[0]?.author ?? { name: "Unknown Author", url: "" };
+      timestamp = videos[0]?.timestamp ?? "";
+      description = videos[0]?.description ?? "";
+      ago = videos[0]?.ago ?? "";
       console.log(`✅ Found: ${songTitle}`);
     }
 
     // Buat object Song
-    const song: Song = { title: songTitle, url: songUrl };
+    const song: Song = {
+      title: songTitle,
+      url: songUrl,
+      thumbnail,
+      image,
+      duration,
+      views,
+      author,
+      timestamp,
+      description,
+      ago,
+    };
 
     // Ambil queue server ini dari Map
     let serverQueue = queue.get(interaction.guild.id);
@@ -153,11 +191,16 @@ export const executePlay = async (interaction: any, query: string, queue:any, yo
 
         // Mulai playback lagu pertama
         console.log("▶️ Starting playback...");
-        playSong(interaction.guild.id, serverQueue.songs[0] as Song, queue, youtubedl);
+        playSong(
+          interaction.guild.id,
+          serverQueue.songs[0] as Song,
+          queue,
+          youtubedl
+        );
         serverQueue.playing = true;
 
         // Update reply dengan info lagu yang sedang diputar
-        await interaction.editReply(`🎵 Now playing: ${song.title}`);
+        await interaction.editReply(embedPlaySong(song, interaction));
       } catch (error) {
         console.error("❌ Error joining voice channel:", error);
         return interaction.editReply(

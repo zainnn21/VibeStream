@@ -1,8 +1,8 @@
 import { EmbedBuilder } from "discord.js";
-import type { Song } from "../interfaces/song.ts";
-import type { GuildMember } from "discord.js";
+import type { Song } from "../interfaces/song";
+import { GuildMember } from "discord.js";
 
-export const embedPlaySong = (song: Song, interaction: any) => {
+export const embedAddedQueue = (interaction: any, song: Song) => {
   const member = interaction.member as GuildMember;
   const voiceChannel = member?.voice.channel;
 
@@ -30,7 +30,7 @@ export const embedPlaySong = (song: Song, interaction: any) => {
 
   const embed = new EmbedBuilder()
     .setColor(0x0099ff)
-    .setTitle(`🎧 Now Playing`)
+    .setTitle(`🎵 Added to Queue`)
     .setURL(song.url)
     .setDescription(`**[${song.title}](${song.url})**`)
     .setThumbnail(thumbnailUrl)

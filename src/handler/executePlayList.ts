@@ -3,6 +3,7 @@ import { joinVoiceChannel, createAudioPlayer } from "@discordjs/voice";
 import type { Song } from "../interfaces/song.ts";
 import type { Queue } from "../interfaces/queue.ts";
 import { playSong } from "../utils/playSong.ts";
+import { embedPlaylistStart } from "../embed/embedPlaylistStart.ts";
 
 /**
  * Handler untuk command /playlist
@@ -169,12 +170,7 @@ export const executePlayList = async (
 
         // Reply dengan info playlist
         await interaction.editReply(
-          `🎵 **Playlist Started!**\n` +
-            `✅ Added ${songs.length} songs to queue\n` +
-            (skippedCount > 0
-              ? `⏭️ Skipped ${skippedCount} unavailable videos\n`
-              : "") +
-            `▶️ Now playing: **${songs[0]?.title}**`
+          embedPlaylistStart(query, songs, skippedCount, interaction)
         );
       } catch (error) {
         console.error("❌ Error joining voice channel:", error);
@@ -188,12 +184,7 @@ export const executePlayList = async (
       serverQueue.songs.push(...songs);
 
       await interaction.editReply(
-        `🎶 **Playlist Added to Queue!**\n` +
-          `✅ Added ${songs.length} songs\n` +
-          (skippedCount > 0
-            ? `⏭️ Skipped ${skippedCount} unavailable videos\n`
-            : "") +
-          `📋 Total songs in queue: ${serverQueue.songs.length}`
+        embedPlaylistStart(query, songs, skippedCount, interaction)
       );
     }
   } catch (error) {
