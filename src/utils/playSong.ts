@@ -65,6 +65,8 @@ export const playSong = async (
 
     console.log(`🎵 Now playing: ${song.title}`);
 
+    await new Promise((r) => setTimeout(r, 700)); // delay 0.7 detik
+
     // Jalankan yt-dlp dan stream ke stdout
     const ytdlp = spawn("yt-dlp", [
       "-f",
@@ -83,6 +85,12 @@ export const playSong = async (
       "youtube:player_client=android",
       song.url,
     ]);
+
+    await new Promise<void>((resolve) => {
+      ytdlp.stdout.once("readable", () => {
+        resolve();
+      });
+    });
 
     //  Proses stream yt-dlp → ffmpeg
     const ffmpeg = spawn(
@@ -108,6 +116,13 @@ export const playSong = async (
     serverQueue.currentYtdlp = ytdlp;
     serverQueue.currentFFmpeg = ffmpeg;
 
+    ytdlp.on("error", async (err) => {
+      console.error("❌ yt-dlp error:", err);
+      await new Promise((r) => setTimeout(r, 500)); // delay sebelum retry
+      if (serverQueue.songs.length > 0) {
+        playSong(guildId, serverQueue.songs[0], queue, youtubedl);
+      }
+    });
     // Tangani error EPIPE dan stream
     ytdlp.stdout.pipe(ffmpeg.stdin).on("error", (err) => {
       if ((err as NodeJS.ErrnoException).code !== "EPIPE") {
@@ -141,7 +156,7 @@ export const playSong = async (
       }
 
       console.log("⏭️ Song finished, moving to next...");
-      
+
       // ✅ Set playing = false SEBELUM proses apapun
       serverQueue.playing = false;
 
@@ -157,10 +172,10 @@ export const playSong = async (
       if (serverQueue.songs.length > 0) {
         const nextSong = serverQueue.songs[0];
         console.log(`▶️ Playing next song: ${nextSong.title}`);
-        
+
         // Delay kecil untuk stabilitas
         await new Promise((r) => setTimeout(r, 300));
-        
+
         // ✅ PENTING: Set playing = true sebelum playSong
         serverQueue.playing = true;
         await playSong(guildId, nextSong, queue, youtubedl);

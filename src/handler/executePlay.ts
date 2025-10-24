@@ -5,6 +5,7 @@ import yts, { type Author, type Duration } from "yt-search";
 import type { Queue } from "../interfaces/queue.ts";
 import { playSong } from "../utils/playSong.ts";
 import { embedPlaySong } from "../embed/playSong.ts";
+import { embedAddedQueue } from "../embed/addedQueue.ts";
 /**
  * Handler untuk command /play
  * Memutar musik dari YouTube URL atau search query
@@ -214,7 +215,7 @@ export const executePlay = async (
         `➕ Adding to existing queue (${serverQueue.songs.length} songs)`
       );
       serverQueue.songs.push(song);
-      await interaction.editReply(`🎶 Added to queue: ${song.title}`);
+      await interaction.editReply(embedAddedQueue(song, interaction));
     }
   } catch (error) {
     console.error("❌ Error in executePlay:", error);

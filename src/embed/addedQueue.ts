@@ -2,7 +2,7 @@ import { EmbedBuilder } from "discord.js";
 import type { Song } from "../interfaces/song";
 import { GuildMember } from "discord.js";
 
-export const embedAddedQueue = (interaction: any, song: Song) => {
+export const embedAddedQueue = (song: Song, interaction: any) => {
   const member = interaction.member as GuildMember;
   const voiceChannel = member?.voice.channel;
 
@@ -15,6 +15,7 @@ export const embedAddedQueue = (interaction: any, song: Song) => {
 
   const formatViews = (views?: number) => {
     if (!views) return "Unknown";
+    if (views >= 1_000_000_000) return `${(views / 1_000_000_000).toFixed(1)}B`;
     if (views >= 1_000_000) return `${(views / 1_000_000).toFixed(1)}M`;
     if (views >= 1_000) return `${(views / 1_000).toFixed(1)}K`;
     return `${views}`;
