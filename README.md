@@ -10,9 +10,10 @@ This bot is built using modern Slash Commands (`/`) for a seamless user experien
 
 - **Slash Commands:** Easy-to-use `/` commands for all functions.
 - **YouTube Streaming:** Plays audio from YouTube links or search queries.
-- **Queue System:** A full-featured song queue.
+- **Queue System:** Full-featured song queue with multiple songs.
 - **Core Controls:** Play, stop, skip, and view the queue.
 - **Queue Management:** Shuffle the upcoming songs.
+- **Playlist Support:** Add multiple songs at once using a playlist command.
 - **Help Command:** A dynamic embedded help message.
 
 ---
@@ -57,18 +58,20 @@ Follow these steps to get your own instance of the bot up and running.
 
 1.  **Clone the repository:**
 
-2.  **Install dependencies with Bun:**
+2.  **Install dependencies with Npm:**
 
     ```bash
-    bun install
+    npm install
     ```
 
-3.  **Install `yt-dlp` with npm:**
-    _This package has known installation issues with Bun, so we use `npm` just for this one._
+3.  **Install yt-dlp manually (recommended)**
+    Instead of using NPM, download it directly from the official GitHub:
 
-    ```bash
-    npm install yt-dlp
-    ```
+    - Visit: https://github.com/yt-dlp/yt-dlp
+    - Download:
+      - Windows: yt-dlp.exe
+      - Linux/macOS: yt-dlp (then run chmod +x yt-dlp)
+    - Place it in your project folder
 
 4.  **Create your environment file:**
     Create a file named `.env` in the root of the project and add your credentials:
@@ -85,20 +88,24 @@ Before starting the bot, you must register its `/` commands with Discord.
 _Run this command **one time** (and again any time you add a new command):_
 
 ```bash
-bun run deploy-commands.ts
+node src/deploy-commands.js
 ```
 
 ### 5. Run the Bot
 
 You're all set! Start the bot.
 
+> ⚠️ Note: This bot now uses **Node.js** instead of Bun for runtime.  
+> Bun previously caused issues with streaming multiple songs and handling `yt-dlp` reliably. Node.js provides a stable and fully supported environment for audio streaming with Discord.js.
+
 ```bash
-bun run index.ts
+npm run devnode
 ```
 
 ## 🤖 Available Commands
 
 - `/play [query]` - Plays a song from a YouTube URL or search query.
+- `/playlist [playlist URL]` - Adds multiple songs to the queue at once.
 - `/stop` - Stops the music, clears the queue, and disconnects the bot.
 - `/skip` - Skips the current song and plays the next in the queue.
 - `/queue` - Displays the current song queue (up to 10 songs).
@@ -107,8 +114,20 @@ bun run index.ts
 
 ## Visual Flow
 
-Windows (Direct Mode) (yt-dlp → URL → DiscordJS → Voice Channel) Not needed FFmpeg
-Docker (Pipe Mode) (yt-dlp → FFmpeg (convert audio) → stdout (pipe:1) → DiscordJS → Voice Channel) FFmpeg needed to convert format
+Pipe Mode (Recommended):
+
+`yt-dlp → FFmpeg (convert audio to s16le or PCM) → stdout pipe → Discord.js → Voice Channel`
+
+Discord.js secara internal mengencode PCM menjadi Opus sebelum dikirim ke voice channel
+
+- FFmpeg is required to ensure audio format compatibility.
+- Works consistently on both Windows and Linux/Docker environments.
+
+## Docker Support
+
+```bash
+docker-compose up --build
+```
 
 ## ⚠️ Disclaimer
 
