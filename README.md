@@ -18,6 +18,13 @@ This bot is built using modern Slash Commands (`/`) for a seamless user experien
 
 ---
 
+## 📸 Screenshot
+
+![Bot Screenshot](https://imgur.com/b631WWr.png)
+![Bot Screenshot](https://imgur.com/NPuKUsS.png)
+![Bot Screenshot](https://imgur.com/RWI0MEM.png)
+
+---
 ## 🛠️ Tech Stack
 
 - **Runtime:** [Bun.js](https://bun.sh/)
