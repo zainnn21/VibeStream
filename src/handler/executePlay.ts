@@ -97,14 +97,18 @@ export const executePlay = async (
       songTitle = (info as { title: string }).title || "Unknown Title";
       thumbnail = (info as { thumbnail: string }).thumbnail || "";
       image = (info as { image: string }).image || "";
-      duration = (info as { duration: Duration }).duration || {
-        seconds: 0,
-        timestamp: "",
+      duration = {
+        seconds: info.duration || 0,
+        timestamp:
+          info.duration_string ||
+          (info.duration
+            ? new Date(info.duration * 1000).toISOString().substr(14, 5)
+            : "N/A"),
       };
-      views = (info as { viewCount: number }).viewCount || 0;
+      views = info.view_count || 0;
       author = (info as { author: Author }).author || {
-        name: "Unknown Author",
-        url: "",
+        name: info.uploader || "Unknown Author",
+        url: info.uploader_url || "",
       };
       timestamp = (info as { timestamp: string }).timestamp || "";
       description = (info as { description: string }).description || "";
@@ -171,10 +175,14 @@ export const executePlay = async (
 
         player.on("error", (error) => {
           const songTitle = (error.resource?.metadata as Song)?.title;
-          console.error(`❌ Player Error: ${error.message} with resource ${songTitle || "Unknown Song"}`);
+          console.error(
+            `❌ Player Error: ${error.message} with resource ${
+              songTitle || "Unknown Song"
+            }`
+          );
           // Paksa player untuk stop. Ini bakal memicu event 'Idle'
           // yang seharusnya menangani pemutaran lagu berikutnya.
-          player.stop(true); 
+          player.stop(true);
         });
 
         // Buat queue contract untuk server ini
