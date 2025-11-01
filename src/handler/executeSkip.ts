@@ -6,10 +6,19 @@ export const executeSkip = async (
   queue: any,
   youtubedl: any
 ) => {
+
+  try {
+    await interaction.deferReply();
+  } catch (err) {
+    console.warn("⚠️ Gagal defer reply:", err);
+    // Jika defer gagal, kemungkinan interaksi sudah tidak valid.
+    return; 
+  }
+
   const serverQueue = queue.get(interaction.guild.id);
 
   if (!serverQueue) {
-    return interaction.reply("❌ Bot is not playing anything");
+    return interaction.editReply("❌ Bot is not playing anything");
   }
 
   if (serverQueue.songs.length <= 1) {
@@ -18,7 +27,7 @@ export const executeSkip = async (
       serverQueue.connection.destroy();
     } catch {}
     queue.delete(interaction.guild.id);
-    return interaction.reply("📭 Queue ended, leaving voice channel");
+    return interaction.editReply("📭 Queue ended, leaving voice channel");
   }
 
   // ✅ Matikan semua proses aktif (yt-dlp / ffmpeg) dengan aman
@@ -38,7 +47,7 @@ export const executeSkip = async (
       serverQueue.connection.destroy();
     } catch {}
     queue.delete(interaction.guild.id);
-    return interaction.reply("📭 Queue empty, leaving voice channel");
+    return interaction.editReply("📭 Queue empty, leaving voice channel");
   }
 
   // ✅ Pastikan koneksi dan player masih aktif
@@ -47,22 +56,14 @@ export const executeSkip = async (
     serverQueue.connection.subscribe(serverQueue.player);
   }
 
-  // ✅ Reset player sebelum lanjut
-  try {
-    serverQueue.player.stop(true);
-  } catch (err) {
-    console.warn("⚠️ Player stop failed:", err);
-  }
-
   // ✅ Set flag dan mulai lagu berikutnya
   serverQueue.playing = true;
 
   try {
     await playSong(interaction.guild.id, nextSong, queue, youtubedl);
+    await interaction.editReply(embedSkipSong(skippedSong, nextSong, interaction));
   } catch (err) {
     console.error("❌ Error while playing next song:", err);
-    return interaction.reply("⚠️ Failed to play the next song.");
+    return interaction.editReply("⚠️ Failed to play the next song.");
   }
-
-  await interaction.reply(embedSkipSong(skippedSong, nextSong, interaction));
 };

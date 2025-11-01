@@ -169,6 +169,14 @@ export const executePlay = async (
         // Buat audio player untuk streaming
         const player = createAudioPlayer();
 
+        player.on("error", (error) => {
+          const songTitle = (error.resource?.metadata as Song)?.title;
+          console.error(`❌ Player Error: ${error.message} with resource ${songTitle || "Unknown Song"}`);
+          // Paksa player untuk stop. Ini bakal memicu event 'Idle'
+          // yang seharusnya menangani pemutaran lagu berikutnya.
+          player.stop(true); 
+        });
+
         // Buat queue contract untuk server ini
         const queueContract: Queue = {
           voiceChannel,
