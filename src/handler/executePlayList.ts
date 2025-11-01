@@ -172,6 +172,17 @@ export const executePlayList = async (
         connection.subscribe(player);
         console.log("✅ Player subscribed to connection");
 
+        const hydratedFirstSong = await playSong(
+          interaction.guild.id,
+          serverQueue.songs[0] as Song,
+          queue,
+          youtubedl
+        );
+
+        if (hydratedFirstSong) {
+          songs[0] = hydratedFirstSong;
+        }
+
         // Mulai playback lagu pertama
         console.log("▶️ Starting playlist playback...");
         playSong(
@@ -194,8 +205,28 @@ export const executePlayList = async (
     } else {
       // Queue sudah ada, tambahkan ke existing queue
       console.log(`➕ Adding playlist to existing queue`);
-      serverQueue.songs.push(...songs);
+      const firstSong = songs[0];
+      if (firstSong) {
+        try {
+          const info = await youtubedl(firstSong.url, {
+            dumpSingleJson: true,
+            noCheckCertificates: true,
+            noWarnings: true,
+            noPlaylist: true,
+            skipDownload: true,
+          });
 
+          firstSong.thumbnail = info.thumbnail;
+          firstSong.title = info.title || firstSong.title;
+          console.log(`✅ Hydrated thumbnail for embed: ${firstSong.title}`);
+        } catch (err: any) {
+          console.warn(
+            `⚠️ Failed to hydrate thumbnail for embed: ${err.message}`
+          );
+        }
+      }
+
+      serverQueue.songs.push(...songs);
       await interaction.editReply(
         embedPlaylistStart(query, songs, skippedCount, interaction)
       );

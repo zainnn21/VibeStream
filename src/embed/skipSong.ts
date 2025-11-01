@@ -1,5 +1,34 @@
 import { EmbedBuilder } from "discord.js";
 
+
+const formatViews = (views?: number) => {
+  // Tangani 'undefined' atau 'null'
+  if (views === undefined || views === null) {
+    return "Unknown";
+  }
+  // Tangani '0'
+  if (views === 0) {
+    return "0";
+  }
+
+  // Logika pemformatan
+  if (views >= 1_000_000_000) {
+    const num = (views / 1_000_000_000).toFixed(1);
+    return `${num.replace(/\.0$/, "")}B`; // 5.0B -> 5B
+  }
+  if (views >= 1_000_000) {
+    const num = (views / 1_000_000).toFixed(1);
+    return `${num.replace(/\.0$/, "")}M`; // 1.0M -> 1M
+  }
+  if (views >= 1_000) {
+    const num = (views / 1_000).toFixed(1);
+    return `${num.replace(/\.0$/, "")}K`; // 2.0K -> 2K
+  }
+
+  // Angka di bawah 1000
+  return `${views}`;
+};
+
 export const embedSkipSong = (
   skippedSong: any,
   nextSong: any,
@@ -17,10 +46,7 @@ export const embedSkipSong = (
           : "Unknown");
 
   // Normalisasi views
-  const views =
-    typeof nextSong.views === "number"
-      ? nextSong.views.toLocaleString()
-      : nextSong.views || "N/A";
+  const views = formatViews(nextSong.views);
 
   const embed = new EmbedBuilder()
     .setColor(0x1db954)

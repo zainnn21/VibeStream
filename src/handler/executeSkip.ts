@@ -60,8 +60,15 @@ export const executeSkip = async (
   serverQueue.playing = true;
 
   try {
-    await playSong(interaction.guild.id, nextSong, queue, youtubedl);
-    await interaction.editReply(embedSkipSong(skippedSong, nextSong, interaction));
+    const fullNextSong = await playSong(
+    interaction.guild.id,
+    nextSong,
+    queue,
+    youtubedl
+  );
+  await interaction.editReply(
+    embedSkipSong(skippedSong, fullNextSong, interaction)
+  );
   } catch (err) {
     console.error("❌ Error while playing next song:", err);
     return interaction.editReply("⚠️ Failed to play the next song.");
