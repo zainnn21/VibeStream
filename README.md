@@ -125,7 +125,6 @@ Pipe Mode (Recommended):
 
 `yt-dlp → FFmpeg (convert audio to s16le or PCM) → stdout pipe → Discord.js → Voice Channel`
 
-Discord.js secara internal mengencode PCM menjadi Opus sebelum dikirim ke voice channel
 
 - FFmpeg is required to ensure audio format compatibility.
 - Works consistently on both Windows and Linux/Docker environments.
